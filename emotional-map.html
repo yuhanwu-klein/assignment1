@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emotional Map</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background-color 1s ease;
+            background-color: #1a1a1a;
+            overflow: hidden;
+        }
+
+        .container {
+            text-align: center;
+            padding: 40px;
+            max-width: 800px;
+            width: 90%;
+        }
+
+        .screen {
+            opacity: 0;
+            transition: opacity 0.8s ease;
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .screen.active {
+            opacity: 1;
+            position: relative;
+        }
+
+        h1 {
+            font-size: 4rem;
+            margin-bottom: 2rem;
+            color: #ffffff;
+            text-transform: uppercase;
+            letter-spacing: 0.3rem;
+            font-weight: 300;
+            animation: fadeInTitle 1.5s ease;
+        }
+
+        @keyframes fadeInTitle {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: #cccccc;
+            margin-bottom: 3rem;
+            font-weight: 300;
+        }
+
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        button {
+            padding: 1.5rem 3rem;
+            font-size: 1.3rem;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.05);
+            color: #ffffff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            letter-spacing: 0.1rem;
+            font-weight: 300;
+            text-transform: uppercase;
+        }
+
+        button:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.6);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .scene-content {
+            animation: fadeInContent 1s ease;
+        }
+
+        @keyframes fadeInContent {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .scene-title {
+            font-size: 3rem;
+            margin-bottom: 2rem;
+            color: #ffffff;
+            font-weight: 300;
+            letter-spacing: 0.2rem;
+        }
+
+        .scene-description {
+            font-size: 1.4rem;
+            line-height: 2rem;
+            color: rgba(255, 255, 255, 0.9);
+            max-width: 600px;
+            margin: 0 auto 3rem;
+            font-weight: 300;
+        }
+
+        .back-button {
+            margin-top: 2rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 1rem 2rem;
+            font-size: 1rem;
+        }
+
+        .emotion-icon {
+            font-size: 5rem;
+            margin-bottom: 2rem;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+                opacity: 0.8;
+            }
+            50% {
+                transform: scale(1.1);
+                opacity: 1;
+            }
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.5rem;
+            }
+
+            .scene-title {
+                font-size: 2rem;
+            }
+
+            .scene-description {
+                font-size: 1.1rem;
+            }
+
+            button {
+                font-size: 1rem;
+                padding: 1rem 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Title Screen -->
+    <div id="titleScreen" class="screen active">
+        <div class="container">
+            <h1>Emotional Map</h1>
+            <p class="subtitle">You stand in an empty room. Three groups of people await.</p>
+            <div class="button-group">
+                <button onclick="enterScene('clash')">The Clash</button>
+                <button onclick="enterScene('embrace')">The Embrace</button>
+                <button onclick="enterScene('stillness')">The Stillness</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- The Clash Scene -->
+    <div id="clashScene" class="screen">
+        <div class="container scene-content">
+            <div class="emotion-icon">⚔️</div>
+            <h2 class="scene-title">The Clash</h2>
+            <p class="scene-description">
+                The air crackles with tension. Voices rise and fall in heated argument,
+                fists clenched, eyes blazing. Energy pulses through the chaos—raw,
+                unfiltered, and intense. This is conflict in its purest form,
+                where emotions collide and sparks fly.
+            </p>
+            <button class="back-button" onclick="returnToTitle()">Return</button>
+        </div>
+    </div>
+
+    <!-- The Embrace Scene -->
+    <div id="embraceScene" class="screen">
+        <div class="container scene-content">
+            <div class="emotion-icon">💝</div>
+            <h2 class="scene-title">The Embrace</h2>
+            <p class="scene-description">
+                Warmth radiates from intertwined bodies. Soft whispers of comfort
+                and connection fill the space. Arms wrap around shoulders,
+                hearts beat in gentle rhythm. Here, love flows freely—
+                a sanctuary of tenderness and human connection.
+            </p>
+            <button class="back-button" onclick="returnToTitle()">Return</button>
+        </div>
+    </div>
+
+    <!-- The Stillness Scene -->
+    <div id="stillnessScene" class="screen">
+        <div class="container scene-content">
+            <div class="emotion-icon">🗿</div>
+            <h2 class="scene-title">The Stillness</h2>
+            <p class="scene-description">
+                Silence hangs heavy in the air. Figures stand motionless,
+                lost in their own worlds. No words, no movement—just the weight
+                of presence and absence intertwined. In this quiet space,
+                peace and emptiness become one.
+            </p>
+            <button class="back-button" onclick="returnToTitle()">Return</button>
+        </div>
+    </div>
+
+    <script>
+        // Audio context for generating tones
+        let audioContext;
+        let currentScreen = 'titleScreen';
+
+        // Initialize audio context on first user interaction
+        function initAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        // Play a tone with specified frequency and duration
+        function playTone(frequency, duration, type = 'sine') {
+            initAudio();
+
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            oscillator.frequency.value = frequency;
+            oscillator.type = type;
+
+            // Fade in and out for smoother sound
+            gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+            gainNode.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 0.1);
+            gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + duration);
+
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + duration);
+        }
+
+        // Scene configurations
+        const scenes = {
+            clash: {
+                element: 'clashScene',
+                backgroundColor: '#8B0000',
+                frequency: 220, // Lower, more dissonant tone
+                duration: 0.5,
+                type: 'sawtooth'
+            },
+            embrace: {
+                element: 'embraceScene',
+                backgroundColor: '#FF69B4',
+                frequency: 523.25, // C5 - warm, pleasant tone
+                duration: 1,
+                type: 'sine'
+            },
+            stillness: {
+                element: 'stillnessScene',
+                backgroundColor: '#4A4A4A',
+                frequency: 174.61, // F3 - low, grounding tone
+                duration: 1.5,
+                type: 'triangle'
+            }
+        };
+
+        // Switch to a specific screen with fade effect
+        function switchScreen(newScreenId) {
+            const currentScreenElement = document.getElementById(currentScreen);
+            const newScreenElement = document.getElementById(newScreenId);
+
+            // Fade out current screen
+            currentScreenElement.classList.remove('active');
+
+            // Fade in new screen after a brief delay
+            setTimeout(() => {
+                currentScreen = newScreenId;
+                newScreenElement.classList.add('active');
+            }, 800);
+        }
+
+        // Enter a specific scene
+        function enterScene(sceneType) {
+            const scene = scenes[sceneType];
+
+            // Play corresponding tone
+            playTone(scene.frequency, scene.duration, scene.type);
+
+            // Change background color
+            document.body.style.backgroundColor = scene.backgroundColor;
+
+            // Switch to scene screen
+            switchScreen(scene.element);
+        }
+
+        // Return to title screen
+        function returnToTitle() {
+            // Play a neutral return tone
+            playTone(440, 0.3, 'sine');
+
+            // Reset background color
+            document.body.style.backgroundColor = '#1a1a1a';
+
+            // Switch to title screen
+            switchScreen('titleScreen');
+        }
+
+        // Initialize audio context on any click (for browser autoplay policies)
+        document.addEventListener('click', initAudio, { once: true });
+    </script>
+</body>
+</html>

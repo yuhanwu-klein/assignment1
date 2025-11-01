@@ -1,0 +1,1021 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌳 Grow Your Tree - Interactive Voice Game</title>
+    <style>
+        /* ==================== Global Styles ==================== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            background: linear-gradient(to bottom, #87CEEB 0%, #E0F6FF 50%, #FFFFFF 100%);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* ==================== Canvas Styles ==================== */
+        #gameCanvas {
+            display: block;
+            background: linear-gradient(to bottom, #87CEEB 0%, #E0F6FF 50%, #FFFFFF 100%);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+        }
+
+        /* ==================== Menu Screen ==================== */
+        #menuScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            transition: opacity 0.5s ease-out;
+        }
+
+        #menuScreen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .menu-title {
+            font-size: 3.5em;
+            color: white;
+            margin-bottom: 20px;
+            text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.3);
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .menu-subtitle {
+            font-size: 1.2em;
+            color: #e0e0e0;
+            margin-bottom: 40px;
+            text-align: center;
+            max-width: 600px;
+            padding: 0 20px;
+        }
+
+        .tree-selection {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .tree-option {
+            background: rgba(255, 255, 255, 0.9);
+            border: 3px solid transparent;
+            border-radius: 15px;
+            padding: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            min-width: 150px;
+        }
+
+        .tree-option:hover {
+            transform: translateY(-10px) scale(1.05);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+            border-color: #FFD700;
+        }
+
+        .tree-icon {
+            font-size: 4em;
+            margin-bottom: 10px;
+        }
+
+        .tree-name {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #333;
+        }
+
+        /* ==================== UI Overlay ==================== */
+        #uiOverlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 50;
+        }
+
+        .stats-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.85);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            min-width: 250px;
+        }
+
+        .stat-item {
+            margin-bottom: 15px;
+            font-size: 1.1em;
+            color: #333;
+        }
+
+        .stat-label {
+            font-weight: bold;
+            color: #555;
+        }
+
+        .microphone-meter {
+            margin-top: 10px;
+        }
+
+        .meter-bar {
+            width: 100%;
+            height: 20px;
+            background: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .meter-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #8BC34A, #CDDC39);
+            border-radius: 10px;
+            transition: width 0.1s ease;
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.6);
+        }
+
+        .instruction-text {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.85);
+            border-radius: 12px;
+            padding: 15px 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            max-width: 300px;
+            font-size: 0.95em;
+            color: #333;
+        }
+
+        .instruction-text strong {
+            color: #667eea;
+        }
+
+        /* ==================== Completion Screen ==================== */
+        .completion-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 40px 60px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            pointer-events: none;
+        }
+
+        .completion-message.show {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .completion-title {
+            font-size: 2.5em;
+            color: #4CAF50;
+            margin-bottom: 15px;
+        }
+
+        .completion-text {
+            font-size: 1.2em;
+            color: #555;
+            margin-bottom: 25px;
+        }
+
+        .restart-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.1em;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            pointer-events: all;
+        }
+
+        .restart-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.5);
+        }
+
+        /* ==================== Animations ==================== */
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        /* ==================== Permission Prompt ==================== */
+        .permission-prompt {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 30px 40px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            z-index: 200;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .permission-prompt.show {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .permission-prompt h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+
+        .permission-prompt p {
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .permission-button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1em;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .permission-button:hover {
+            background: #45a049;
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+    <!-- Menu Screen -->
+    <div id="menuScreen">
+        <h1 class="menu-title">🌱 Grow Your Tree 🌳</h1>
+        <p class="menu-subtitle">
+            Choose your tree and watch it grow with your voice! <br>
+            Speak or make sounds to help your tree flourish. 🎤
+        </p>
+        <div class="tree-selection">
+            <div class="tree-option" data-tree="peach">
+                <div class="tree-icon">🍑</div>
+                <div class="tree-name">Peach Tree</div>
+            </div>
+            <div class="tree-option" data-tree="pear">
+                <div class="tree-icon">🍐</div>
+                <div class="tree-name">Pear Tree</div>
+            </div>
+            <div class="tree-option" data-tree="cherry">
+                <div class="tree-icon">🍒</div>
+                <div class="tree-name">Cherry Tree</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Microphone Permission Prompt -->
+    <div class="permission-prompt" id="permissionPrompt">
+        <h3>🎤 Microphone Access Needed</h3>
+        <p>This game uses your voice to grow the tree.<br>Please allow microphone access to continue.</p>
+        <button class="permission-button" id="allowMicButton">Allow Microphone</button>
+    </div>
+
+    <!-- Main Game Canvas -->
+    <canvas id="gameCanvas" width="1200" height="800"></canvas>
+
+    <!-- UI Overlay -->
+    <div id="uiOverlay">
+        <div class="stats-panel">
+            <div class="stat-item">
+                <span class="stat-label">Tree Type:</span>
+                <span id="treeType">-</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Tree Height:</span>
+                <span id="treeHeight">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Fruits Collected:</span>
+                <span id="fruitsCollected">0</span> / <span id="totalFruits">0</span>
+            </div>
+            <div class="microphone-meter">
+                <div style="font-size: 0.9em; margin-bottom: 5px; color: #555;">🎤 Voice Level</div>
+                <div class="meter-bar">
+                    <div class="meter-fill" id="meterFill" style="width: 0%;"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="instruction-text">
+            <strong>🎤 Make sounds</strong> to grow your tree!<br>
+            <strong>⌨️ Arrow keys</strong> to move the orb<br>
+            <strong>✨ Collect fruits</strong> by touching them
+        </div>
+
+        <!-- Completion Message -->
+        <div class="completion-message" id="completionMessage">
+            <div class="completion-title">🎉 Congratulations! 🎉</div>
+            <div class="completion-text">Your tree is fully grown! 🌳</div>
+            <button class="restart-button" id="restartButton">Grow Another Tree</button>
+        </div>
+    </div>
+
+    <script>
+        // ==================== Game Configuration ====================
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Tree type configurations
+        const TREE_CONFIGS = {
+            peach: {
+                name: 'Peach Tree',
+                icon: '🍑',
+                trunkColor: '#8B6F47',
+                leafColor: '#FFB6C1',
+                fruitColor: '#FFB347',
+                fruitEmoji: '🍑'
+            },
+            pear: {
+                name: 'Pear Tree',
+                icon: '🍐',
+                trunkColor: '#8B7355',
+                leafColor: '#90EE90',
+                fruitColor: '#F0E68C',
+                fruitEmoji: '🍐'
+            },
+            cherry: {
+                name: 'Cherry Tree',
+                icon: '🍒',
+                trunkColor: '#654321',
+                leafColor: '#228B22',
+                fruitColor: '#DC143C',
+                fruitEmoji: '🍒'
+            }
+        };
+
+        // ==================== Game State Management ====================
+        let gameState = 'menu'; // 'menu', 'growing', 'playing', 'finished'
+        let selectedTreeType = null;
+        let treeConfig = null;
+
+        // Audio variables
+        let audioContext = null;
+        let analyser = null;
+        let microphone = null;
+        let dataArray = null;
+        let audioLevel = 0;
+
+        // Game objects
+        let tree = null;
+        let playerOrb = null;
+        let fruits = [];
+        let particles = [];
+
+        // Animation
+        let animationId = null;
+        let lastTime = 0;
+
+        // ==================== Particle Class ====================
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.vx = (Math.random() - 0.5) * 2;
+                this.vy = (Math.random() - 0.5) * 2;
+                this.life = 1.0;
+                this.color = color;
+                this.size = Math.random() * 4 + 2;
+            }
+
+            update(deltaTime) {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vy += 0.1; // Gravity
+                this.life -= deltaTime / 1000;
+            }
+
+            draw(ctx) {
+                ctx.save();
+                ctx.globalAlpha = this.life;
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Sparkle effect
+                ctx.fillStyle = 'white';
+                ctx.fillRect(this.x - 1, this.y - 1, 2, 2);
+                ctx.restore();
+            }
+
+            isDead() {
+                return this.life <= 0;
+            }
+        }
+
+        // ==================== Tree Class ====================
+        class Tree {
+            constructor(type) {
+                this.type = type;
+                this.config = TREE_CONFIGS[type];
+                this.x = canvas.width / 2;
+                this.y = canvas.height - 50;
+                this.height = 10;
+                this.targetHeight = 10;
+                this.maxHeight = 400;
+                this.branches = [];
+                this.leaves = [];
+                this.swayOffset = 0;
+                this.growthGlow = 0;
+            }
+
+            grow(amount) {
+                this.targetHeight = Math.min(this.targetHeight + amount, this.maxHeight);
+                this.growthGlow = 1.0;
+
+                // Generate branches at certain heights
+                if (this.height > 100 && this.branches.length === 0) {
+                    this.generateBranches(3);
+                }
+                if (this.height > 200 && this.branches.length === 3) {
+                    this.generateBranches(5);
+                }
+                if (this.height > 300 && this.branches.length === 5) {
+                    this.generateBranches(7);
+                }
+            }
+
+            generateBranches(count) {
+                const startY = this.y - this.height * 0.3;
+                const endY = this.y - this.height * 0.8;
+
+                for (let i = this.branches.length; i < count; i++) {
+                    const branchY = startY - (endY - startY) * (i / count);
+                    const branchLength = 40 + Math.random() * 60;
+                    const branchAngle = (i % 2 === 0 ? -1 : 1) * (Math.PI / 6 + Math.random() * Math.PI / 6);
+
+                    this.branches.push({
+                        x: this.x,
+                        y: branchY,
+                        length: branchLength,
+                        angle: branchAngle,
+                        leaves: []
+                    });
+
+                    // Generate leaves for this branch
+                    this.generateLeavesForBranch(this.branches[this.branches.length - 1]);
+                }
+            }
+
+            generateLeavesForBranch(branch) {
+                const leafCount = 5 + Math.floor(Math.random() * 5);
+                for (let i = 0; i < leafCount; i++) {
+                    const t = i / leafCount;
+                    const x = branch.x + Math.cos(branch.angle) * branch.length * t;
+                    const y = branch.y + Math.sin(branch.angle) * branch.length * t;
+
+                    branch.leaves.push({
+                        x: x + (Math.random() - 0.5) * 20,
+                        y: y + (Math.random() - 0.5) * 20,
+                        size: 8 + Math.random() * 6
+                    });
+                }
+            }
+
+            update(deltaTime) {
+                // Smooth height transition with easing
+                const heightDiff = this.targetHeight - this.height;
+                this.height += heightDiff * 0.05;
+
+                // Wind sway animation
+                this.swayOffset = Math.sin(Date.now() / 1000) * 5;
+
+                // Fade growth glow
+                this.growthGlow = Math.max(0, this.growthGlow - deltaTime / 500);
+            }
+
+            draw(ctx) {
+                ctx.save();
+
+                // Draw growth glow
+                if (this.growthGlow > 0) {
+                    ctx.save();
+                    ctx.globalAlpha = this.growthGlow * 0.3;
+                    ctx.fillStyle = '#FFFF00';
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y - this.height / 2, this.height * 0.8, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.restore();
+                }
+
+                // Draw trunk with sway
+                ctx.translate(this.swayOffset, 0);
+
+                const trunkWidth = 15;
+                const gradient = ctx.createLinearGradient(this.x - trunkWidth, 0, this.x + trunkWidth, 0);
+                gradient.addColorStop(0, this.darkenColor(this.config.trunkColor, 0.8));
+                gradient.addColorStop(0.5, this.config.trunkColor);
+                gradient.addColorStop(1, this.darkenColor(this.config.trunkColor, 0.8));
+
+                ctx.fillStyle = gradient;
+                ctx.fillRect(this.x - trunkWidth / 2, this.y - this.height, trunkWidth, this.height);
+
+                // Draw branches
+                this.branches.forEach(branch => {
+                    // Update branch position based on current tree height
+                    const heightRatio = this.height / this.maxHeight;
+                    const adjustedY = this.y - this.height * (0.3 + heightRatio * 0.5);
+
+                    ctx.strokeStyle = this.config.trunkColor;
+                    ctx.lineWidth = 8;
+                    ctx.beginPath();
+                    ctx.moveTo(branch.x, branch.y);
+                    const endX = branch.x + Math.cos(branch.angle) * branch.length;
+                    const endY = branch.y + Math.sin(branch.angle) * branch.length;
+                    ctx.lineTo(endX, endY);
+                    ctx.stroke();
+
+                    // Draw leaves
+                    branch.leaves.forEach(leaf => {
+                        ctx.fillStyle = this.config.leafColor;
+                        ctx.beginPath();
+                        ctx.arc(leaf.x, leaf.y, leaf.size, 0, Math.PI * 2);
+                        ctx.fill();
+
+                        // Leaf detail
+                        ctx.fillStyle = this.lightenColor(this.config.leafColor, 1.2);
+                        ctx.beginPath();
+                        ctx.arc(leaf.x - leaf.size / 4, leaf.y - leaf.size / 4, leaf.size / 3, 0, Math.PI * 2);
+                        ctx.fill();
+                    });
+                });
+
+                ctx.restore();
+            }
+
+            darkenColor(color, factor) {
+                const hex = color.replace('#', '');
+                const r = Math.floor(parseInt(hex.substr(0, 2), 16) * factor);
+                const g = Math.floor(parseInt(hex.substr(2, 2), 16) * factor);
+                const b = Math.floor(parseInt(hex.substr(4, 2), 16) * factor);
+                return `rgb(${r}, ${g}, ${b})`;
+            }
+
+            lightenColor(color, factor) {
+                const hex = color.replace('#', '');
+                const r = Math.min(255, Math.floor(parseInt(hex.substr(0, 2), 16) * factor));
+                const g = Math.min(255, Math.floor(parseInt(hex.substr(2, 2), 16) * factor));
+                const b = Math.min(255, Math.floor(parseInt(hex.substr(4, 2), 16) * factor));
+                return `rgb(${r}, ${g}, ${b})`;
+            }
+
+            getBranches() {
+                return this.branches;
+            }
+
+            getHeight() {
+                return Math.floor(this.height);
+            }
+        }
+
+        // ==================== Fruit Class ====================
+        class Fruit {
+            constructor(x, y, config) {
+                this.x = x;
+                this.y = y;
+                this.config = config;
+                this.size = 12;
+                this.collected = false;
+                this.opacity = 1;
+                this.bobOffset = Math.random() * Math.PI * 2;
+            }
+
+            update(deltaTime) {
+                // Gentle bobbing animation
+                this.y += Math.sin(Date.now() / 500 + this.bobOffset) * 0.2;
+
+                // Fade out if collected
+                if (this.collected) {
+                    this.opacity -= deltaTime / 500;
+                }
+            }
+
+            draw(ctx) {
+                if (this.opacity <= 0) return;
+
+                ctx.save();
+                ctx.globalAlpha = this.opacity;
+
+                // Draw fruit
+                ctx.fillStyle = this.config.fruitColor;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Highlight
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+                ctx.beginPath();
+                ctx.arc(this.x - this.size / 3, this.y - this.size / 3, this.size / 3, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.restore();
+            }
+
+            checkCollision(orb) {
+                if (this.collected) return false;
+
+                const dx = this.x - orb.x;
+                const dy = this.y - orb.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                return distance < this.size + orb.size;
+            }
+
+            collect() {
+                this.collected = true;
+
+                // Create sparkle particles
+                for (let i = 0; i < 15; i++) {
+                    particles.push(new Particle(this.x, this.y, this.config.fruitColor));
+                }
+            }
+
+            isDead() {
+                return this.collected && this.opacity <= 0;
+            }
+        }
+
+        // ==================== Player Orb Class ====================
+        class PlayerOrb {
+            constructor() {
+                this.x = canvas.width / 2 + 100;
+                this.y = canvas.height / 2;
+                this.size = 15;
+                this.vx = 0;
+                this.vy = 0;
+                this.speed = 3;
+                this.color = '#FFD700';
+                this.glowPhase = 0;
+            }
+
+            update(deltaTime, keys) {
+                // Handle keyboard input
+                this.vx = 0;
+                this.vy = 0;
+
+                if (keys['ArrowUp']) this.vy = -this.speed;
+                if (keys['ArrowDown']) this.vy = this.speed;
+                if (keys['ArrowLeft']) this.vx = -this.speed;
+                if (keys['ArrowRight']) this.vx = this.speed;
+
+                // Update position
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // Boundary checking
+                this.x = Math.max(this.size, Math.min(canvas.width - this.size, this.x));
+                this.y = Math.max(this.size, Math.min(canvas.height - this.size, this.y));
+
+                // Update glow animation
+                this.glowPhase += deltaTime / 1000;
+            }
+
+            draw(ctx) {
+                ctx.save();
+
+                // Outer glow
+                const glowSize = this.size + Math.sin(this.glowPhase * 3) * 5;
+                const gradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, glowSize);
+                gradient.addColorStop(0, 'rgba(255, 215, 0, 0.8)');
+                gradient.addColorStop(0.5, 'rgba(255, 215, 0, 0.4)');
+                gradient.addColorStop(1, 'rgba(255, 215, 0, 0)');
+
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, glowSize, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Inner orb
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Highlight
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+                ctx.beginPath();
+                ctx.arc(this.x - this.size / 3, this.y - this.size / 3, this.size / 2, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.restore();
+            }
+        }
+
+        // ==================== Audio Functions ====================
+        async function initAudio() {
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 256;
+
+                const bufferLength = analyser.frequencyBinCount;
+                dataArray = new Uint8Array(bufferLength);
+
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                microphone = audioContext.createMediaStreamSource(stream);
+                microphone.connect(analyser);
+
+                return true;
+            } catch (error) {
+                console.error('Error accessing microphone:', error);
+                alert('Unable to access microphone. The tree will grow slowly on its own.');
+                return false;
+            }
+        }
+
+        function getAudioLevel() {
+            if (!analyser || !dataArray) return 0;
+
+            analyser.getByteFrequencyData(dataArray);
+
+            // Calculate average volume
+            let sum = 0;
+            for (let i = 0; i < dataArray.length; i++) {
+                sum += dataArray[i];
+            }
+            const average = sum / dataArray.length;
+
+            // Normalize to 0-1 range
+            return average / 255;
+        }
+
+        // ==================== Game Functions ====================
+        function startGame(treeType) {
+            selectedTreeType = treeType;
+            treeConfig = TREE_CONFIGS[treeType];
+
+            // Update UI
+            document.getElementById('treeType').textContent = treeConfig.name + ' ' + treeConfig.icon;
+
+            // Initialize game objects
+            tree = new Tree(treeType);
+            playerOrb = new PlayerOrb();
+            fruits = [];
+            particles = [];
+
+            // Change game state
+            gameState = 'growing';
+
+            // Hide menu
+            document.getElementById('menuScreen').classList.add('hidden');
+
+            // Start game loop if not already running
+            if (!animationId) {
+                gameLoop(0);
+            }
+        }
+
+        function spawnFruits() {
+            const branches = tree.getBranches();
+
+            branches.forEach(branch => {
+                // Spawn 2-3 fruits per branch
+                const fruitCount = 2 + Math.floor(Math.random() * 2);
+
+                for (let i = 0; i < fruitCount; i++) {
+                    const t = 0.5 + Math.random() * 0.5; // Place fruits on outer half of branch
+                    const x = branch.x + Math.cos(branch.angle) * branch.length * t;
+                    const y = branch.y + Math.sin(branch.angle) * branch.length * t;
+
+                    fruits.push(new Fruit(x, y, treeConfig));
+                }
+            });
+
+            // Update UI
+            document.getElementById('totalFruits').textContent = fruits.length;
+
+            // Transition to playing state
+            gameState = 'playing';
+        }
+
+        function checkGameCompletion() {
+            const collectedCount = fruits.filter(f => f.collected).length;
+            document.getElementById('fruitsCollected').textContent = collectedCount;
+
+            if (collectedCount === fruits.length && fruits.length > 0) {
+                gameState = 'finished';
+                document.getElementById('completionMessage').classList.add('show');
+            }
+        }
+
+        // ==================== Render Functions ====================
+        function drawBackground(ctx) {
+            // Sky gradient
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, '#87CEEB');
+            gradient.addColorStop(0.5, '#E0F6FF');
+            gradient.addColorStop(1, '#FFFFFF');
+
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Ground
+            ctx.fillStyle = '#8FBC8F';
+            ctx.fillRect(0, canvas.height - 60, canvas.width, 60);
+
+            // Ground detail
+            ctx.fillStyle = '#7CAA7C';
+            for (let i = 0; i < 20; i++) {
+                const x = (i * canvas.width / 20) + (Math.sin(Date.now() / 2000 + i) * 5);
+                ctx.fillRect(x, canvas.height - 50, 30, 2);
+            }
+        }
+
+        function drawClouds(ctx) {
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+
+            const cloudOffset = (Date.now() / 50) % (canvas.width + 200);
+
+            // Cloud 1
+            drawCloud(ctx, cloudOffset - 200, 80);
+
+            // Cloud 2
+            drawCloud(ctx, cloudOffset + 200, 150);
+
+            // Cloud 3
+            drawCloud(ctx, cloudOffset + 600, 100);
+        }
+
+        function drawCloud(ctx, x, y) {
+            ctx.beginPath();
+            ctx.arc(x, y, 30, 0, Math.PI * 2);
+            ctx.arc(x + 25, y - 10, 35, 0, Math.PI * 2);
+            ctx.arc(x + 50, y, 30, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // ==================== Game Loop ====================
+        const keys = {};
+
+        function gameLoop(currentTime) {
+            const deltaTime = currentTime - lastTime;
+            lastTime = currentTime;
+
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw background
+            drawBackground(ctx);
+            drawClouds(ctx);
+
+            if (gameState === 'growing' || gameState === 'playing' || gameState === 'finished') {
+                // Get audio level
+                audioLevel = getAudioLevel();
+
+                // Auto-grow slightly even without sound for testing
+                const growthAmount = audioLevel * 2 + 0.1;
+                tree.grow(growthAmount);
+
+                // Update UI
+                document.getElementById('treeHeight').textContent = tree.getHeight();
+                const meterWidth = Math.min(100, audioLevel * 150);
+                document.getElementById('meterFill').style.width = meterWidth + '%';
+
+                // Update tree
+                tree.update(deltaTime);
+                tree.draw(ctx);
+
+                // Check if tree is grown enough to spawn fruits
+                if (gameState === 'growing' && tree.getHeight() >= 350) {
+                    spawnFruits();
+                }
+
+                // Update and draw fruits
+                if (gameState === 'playing' || gameState === 'finished') {
+                    fruits.forEach(fruit => {
+                        fruit.update(deltaTime);
+                        fruit.draw(ctx);
+
+                        // Check collision with orb
+                        if (fruit.checkCollision(playerOrb)) {
+                            fruit.collect();
+                        }
+                    });
+
+                    // Remove dead fruits
+                    fruits = fruits.filter(f => !f.isDead());
+
+                    // Update and draw orb
+                    playerOrb.update(deltaTime, keys);
+                    playerOrb.draw(ctx);
+
+                    // Update and draw particles
+                    particles.forEach(particle => {
+                        particle.update(deltaTime);
+                        particle.draw(ctx);
+                    });
+                    particles = particles.filter(p => !p.isDead());
+
+                    // Check game completion
+                    checkGameCompletion();
+                }
+            }
+
+            animationId = requestAnimationFrame(gameLoop);
+        }
+
+        // ==================== Event Listeners ====================
+
+        // Tree selection
+        document.querySelectorAll('.tree-option').forEach(option => {
+            option.addEventListener('click', async () => {
+                const treeType = option.getAttribute('data-tree');
+
+                // Show permission prompt
+                document.getElementById('permissionPrompt').classList.add('show');
+
+                // Wait for permission
+                document.getElementById('allowMicButton').onclick = async () => {
+                    document.getElementById('permissionPrompt').classList.remove('show');
+                    await initAudio();
+                    startGame(treeType);
+                };
+            });
+        });
+
+        // Keyboard controls
+        window.addEventListener('keydown', (e) => {
+            keys[e.key] = true;
+
+            // Prevent arrow key scrolling
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+                e.preventDefault();
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            keys[e.key] = false;
+        });
+
+        // Restart button
+        document.getElementById('restartButton').addEventListener('click', () => {
+            // Reset game state
+            gameState = 'menu';
+            document.getElementById('completionMessage').classList.remove('show');
+            document.getElementById('menuScreen').classList.remove('hidden');
+
+            // Reset UI
+            document.getElementById('fruitsCollected').textContent = '0';
+            document.getElementById('totalFruits').textContent = '0';
+            document.getElementById('treeHeight').textContent = '0';
+            document.getElementById('treeType').textContent = '-';
+
+            // Clear game objects
+            tree = null;
+            playerOrb = null;
+            fruits = [];
+            particles = [];
+        });
+
+        // ==================== Initialize ====================
+        console.log('🌳 Grow Your Tree game initialized!');
+        console.log('Select a tree type to begin your journey.');
+
+    </script>
+</body>
+</html>

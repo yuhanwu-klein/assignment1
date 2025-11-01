@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grow Your Tree - Voice Controlled Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(to bottom, #87CEEB 0%, #E0F6FF 50%, #FFFFFF 100%);
+            overflow: hidden;
+        }
+
+        #gameContainer {
+            text-align: center;
+            position: relative;
+        }
+
+        canvas {
+            border: 3px solid #8B4513;
+            border-radius: 10px;
+            background: linear-gradient(to bottom, #87CEEB 0%, #E0F6FF 50%, #FFFFFF 100%);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        #menuScreen, #gameScreen {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            z-index: 10;
+        }
+
+        #gameScreen {
+            display: none;
+        }
+
+        h1 {
+            color: #2E7D32;
+            margin-bottom: 20px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            color: #558B2F;
+            margin-bottom: 20px;
+        }
+
+        .treeChoice {
+            display: inline-block;
+            margin: 15px;
+            padding: 20px 30px;
+            font-size: 1.5em;
+            background: linear-gradient(135deg, #81C784 0%, #66BB6A 100%);
+            color: white;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .treeChoice:hover {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .treeChoice:active {
+            transform: translateY(-2px) scale(1.02);
+        }
+
+        #statusText {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 1.5em;
+            color: #1B5E20;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(255, 255, 255, 0.8);
+            z-index: 5;
+            background: rgba(255, 255, 255, 0.7);
+            padding: 10px 20px;
+            border-radius: 10px;
+        }
+
+        #collectionMessage {
+            position: absolute;
+            font-size: 2em;
+            color: #FFD700;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            z-index: 15;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        #instructions {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 10px;
+            font-size: 0.9em;
+            color: #333;
+        }
+
+        #restartBtn {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 25px;
+            font-size: 1.1em;
+            background: linear-gradient(135deg, #FF6B6B 0%, #EE5A52 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            z-index: 5;
+        }
+
+        #restartBtn:hover {
+            transform: translateX(-50%) translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        #microphonePrompt {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(255, 235, 59, 0.3);
+            border-radius: 10px;
+            border: 2px solid #FBC02D;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+
+        <!-- Menu Screen -->
+        <div id="menuScreen">
+            <h1>🌱 Grow Your Tree 🌱</h1>
+            <h2>Choose Your Tree Type:</h2>
+            <button class="treeChoice" data-tree="peach">🍑 Peach Tree</button>
+            <button class="treeChoice" data-tree="pear">🍐 Pear Tree</button>
+            <button class="treeChoice" data-tree="cherry">🍒 Cherry Tree</button>
+            <div id="instructions">
+                <strong>How to Play:</strong><br>
+                🎤 Make noise to grow your tree!<br>
+                ⬆️⬇️⬅️➡️ Use arrow keys to move the glowing orb<br>
+                ✨ Collect fruits by touching them with the orb
+            </div>
+        </div>
+
+        <!-- Microphone Permission Screen -->
+        <div id="gameScreen">
+            <h2>🎤 Microphone Access Needed</h2>
+            <p id="microphonePrompt">
+                Please allow microphone access to grow your tree!<br>
+                Click the button below to grant permission.
+            </p>
+            <button id="startMicBtn" class="treeChoice">🎤 Start Game</button>
+        </div>
+
+        <!-- Status Text -->
+        <div id="statusText" class="hidden"></div>
+
+        <!-- Collection Message -->
+        <div id="collectionMessage"></div>
+
+        <!-- Restart Button -->
+        <button id="restartBtn" class="hidden">🔄 Choose New Tree</button>
+    </div>
+
+    <script>
+        // ==================== GAME CONFIGURATION ====================
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Game states
+        let gameState = 'menu'; // 'menu', 'microphone_prompt', 'growing', 'playing'
+        let selectedTree = null;
+
+        // Tree configurations
+        const treeConfig = {
+            peach: {
+                trunkColor: '#8B4513',
+                leavesColor: '#90EE90',
+                fruitColor: '#FFB6C1',
+                fruitEmoji: '🍑',
+                name: 'Peach'
+            },
+            pear: {
+                trunkColor: '#A0522D',
+                leavesColor: '#7CFC00',
+                fruitColor: '#9ACD32',
+                fruitEmoji: '🍐',
+                name: 'Pear'
+            },
+            cherry: {
+                trunkColor: '#654321',
+                leavesColor: '#228B22',
+                fruitColor: '#DC143C',
+                fruitEmoji: '🍒',
+                name: 'Cherry'
+            }
+        };
+
+        // Tree growth state
+        let treeHeight = 0;
+        let maxTreeHeight = 300;
+        let growthSpeed = 0;
+
+        // Orb (player) state
+        let orb = {
+            x: canvas.width / 2,
+            y: canvas.height - 50,
+            radius: 15,
+            speed: 5,
+            glow: 0
+        };
+
+        // Keyboard state
+        let keys = {
+            ArrowUp: false,
+            ArrowDown: false,
+            ArrowLeft: false,
+            ArrowRight: false
+        };
+
+        // Fruits
+        let fruits = [];
+        let collectedFruits = 0;
+
+        // Audio
+        let audioContext = null;
+        let analyser = null;
+        let microphone = null;
+        let dataArray = null;
+
+        // ==================== UI SETUP ====================
+        const menuScreen = document.getElementById('menuScreen');
+        const gameScreen = document.getElementById('gameScreen');
+        const statusText = document.getElementById('statusText');
+        const collectionMessage = document.getElementById('collectionMessage');
+        const restartBtn = document.getElementById('restartBtn');
+        const startMicBtn = document.getElementById('startMicBtn');
+
+        // Tree selection
+        document.querySelectorAll('.treeChoice').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                if (e.target.dataset.tree) {
+                    selectedTree = e.target.dataset.tree;
+                    menuScreen.classList.add('hidden');
+                    gameScreen.style.display = 'block';
+                    gameState = 'microphone_prompt';
+                }
+            });
+        });
+
+        // Start microphone
+        startMicBtn.addEventListener('click', initMicrophone);
+
+        // Restart button
+        restartBtn.addEventListener('click', resetGame);
+
+        // ==================== MICROPHONE SETUP ====================
+        async function initMicrophone() {
+            try {
+                // Request microphone access
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+                // Create audio context
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioContext.createAnalyser();
+                microphone = audioContext.createMediaStreamSource(stream);
+
+                analyser.fftSize = 256;
+                const bufferLength = analyser.frequencyBinCount;
+                dataArray = new Uint8Array(bufferLength);
+
+                microphone.connect(analyser);
+
+                // Start game
+                gameScreen.style.display = 'none';
+                statusText.classList.remove('hidden');
+                statusText.textContent = '🌱 Make some noise to grow your tree!';
+                restartBtn.classList.remove('hidden');
+
+                gameState = 'growing';
+
+                // Start animation loop
+                requestAnimationFrame(gameLoop);
+
+            } catch (error) {
+                alert('Microphone access denied. Please allow microphone access to play the game.');
+                console.error('Microphone error:', error);
+            }
+        }
+
+        // ==================== AUDIO ANALYSIS ====================
+        function analyzeAudio() {
+            if (!analyser || !dataArray) return 0;
+
+            analyser.getByteFrequencyData(dataArray);
+
+            // Calculate average volume
+            let sum = 0;
+            for (let i = 0; i < dataArray.length; i++) {
+                sum += dataArray[i];
+            }
+            const average = sum / dataArray.length;
+
+            // Calculate high frequency content (for pitch detection)
+            let highFreqSum = 0;
+            for (let i = Math.floor(dataArray.length / 2); i < dataArray.length; i++) {
+                highFreqSum += dataArray[i];
+            }
+            const highFreqAverage = highFreqSum / (dataArray.length / 2);
+
+            // Combine volume and frequency for growth speed
+            return (average * 0.7 + highFreqAverage * 0.3) / 255;
+        }
+
+        // ==================== KEYBOARD CONTROLS ====================
+        window.addEventListener('keydown', (e) => {
+            if (e.key in keys) {
+                keys[e.key] = true;
+                e.preventDefault();
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (e.key in keys) {
+                keys[e.key] = false;
+                e.preventDefault();
+            }
+        });
+
+        // ==================== GAME LOGIC ====================
+        function updateOrb() {
+            if (gameState !== 'playing') return;
+
+            // Move orb based on key presses
+            if (keys.ArrowUp) orb.y -= orb.speed;
+            if (keys.ArrowDown) orb.y += orb.speed;
+            if (keys.ArrowLeft) orb.x -= orb.speed;
+            if (keys.ArrowRight) orb.x += orb.speed;
+
+            // Keep orb within canvas bounds
+            orb.x = Math.max(orb.radius, Math.min(canvas.width - orb.radius, orb.x));
+            orb.y = Math.max(orb.radius, Math.min(canvas.height - orb.radius, orb.y));
+
+            // Update glow animation
+            orb.glow = (orb.glow + 0.05) % (Math.PI * 2);
+        }
+
+        function updateTree() {
+            if (gameState === 'growing') {
+                // Analyze audio and grow tree
+                const audioLevel = analyzeAudio();
+                growthSpeed = audioLevel * 3;
+
+                if (growthSpeed > 0.1) {
+                    treeHeight = Math.min(treeHeight + growthSpeed, maxTreeHeight);
+                }
+
+                // Update status
+                const growthPercent = Math.floor((treeHeight / maxTreeHeight) * 100);
+                statusText.textContent = `🌱 Growing... ${growthPercent}%`;
+
+                // Check if tree is fully grown
+                if (treeHeight >= maxTreeHeight) {
+                    gameState = 'playing';
+                    statusText.textContent = `✨ Your ${treeConfig[selectedTree].name} tree is ready! Collect the fruits!`;
+                    spawnFruits();
+                }
+            }
+        }
+
+        function spawnFruits() {
+            fruits = [];
+            const numFruits = 8 + Math.floor(Math.random() * 5);
+
+            // Spawn fruits at random positions around the tree top
+            for (let i = 0; i < numFruits; i++) {
+                const angle = (Math.PI / numFruits) * i + Math.random() * 0.5;
+                const distance = 80 + Math.random() * 60;
+
+                fruits.push({
+                    x: canvas.width / 2 + Math.cos(angle) * distance,
+                    y: canvas.height - treeHeight - 50 + Math.sin(angle) * distance,
+                    radius: 12,
+                    collected: false,
+                    wobble: Math.random() * Math.PI * 2
+                });
+            }
+        }
+
+        function checkCollisions() {
+            if (gameState !== 'playing') return;
+
+            fruits.forEach(fruit => {
+                if (fruit.collected) return;
+
+                // Simple circle collision detection
+                const dx = orb.x - fruit.x;
+                const dy = orb.y - fruit.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance < orb.radius + fruit.radius) {
+                    fruit.collected = true;
+                    collectedFruits++;
+                    showCollectionMessage(fruit.x, fruit.y);
+
+                    // Check if all fruits collected
+                    const allCollected = fruits.every(f => f.collected);
+                    if (allCollected) {
+                        statusText.textContent = `🎉 Amazing! You collected all ${collectedFruits} ${treeConfig[selectedTree].name}s!`;
+                    } else {
+                        statusText.textContent = `✨ Collected ${collectedFruits}/${fruits.length} fruits!`;
+                    }
+                }
+            });
+        }
+
+        function showCollectionMessage(x, y) {
+            collectionMessage.textContent = '✨ Collected!';
+            collectionMessage.style.left = x + 'px';
+            collectionMessage.style.top = y + 'px';
+            collectionMessage.style.opacity = '1';
+
+            setTimeout(() => {
+                collectionMessage.style.opacity = '0';
+            }, 1000);
+        }
+
+        // ==================== RENDERING ====================
+        function drawTree() {
+            if (!selectedTree || treeHeight <= 0) return;
+
+            const config = treeConfig[selectedTree];
+            const baseX = canvas.width / 2;
+            const baseY = canvas.height - 20;
+
+            // Draw trunk
+            const trunkWidth = 40;
+            const trunkHeight = treeHeight * 0.4;
+
+            ctx.fillStyle = config.trunkColor;
+            ctx.fillRect(baseX - trunkWidth / 2, baseY - trunkHeight, trunkWidth, trunkHeight);
+
+            // Draw trunk texture
+            ctx.strokeStyle = 'rgba(101, 67, 33, 0.3)';
+            ctx.lineWidth = 2;
+            for (let i = 0; i < 5; i++) {
+                const y = baseY - trunkHeight * (i / 5);
+                ctx.beginPath();
+                ctx.moveTo(baseX - trunkWidth / 2, y);
+                ctx.lineTo(baseX + trunkWidth / 2, y);
+                ctx.stroke();
+            }
+
+            // Draw foliage/leaves (only if tree is tall enough)
+            if (treeHeight > 50) {
+                const foliageY = baseY - trunkHeight;
+                const foliageSize = Math.min(treeHeight * 0.8, 200);
+
+                // Draw multiple leaf circles for fuller appearance
+                ctx.fillStyle = config.leavesColor;
+
+                // Center circle
+                ctx.beginPath();
+                ctx.arc(baseX, foliageY - foliageSize / 2, foliageSize / 2, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Left circle
+                ctx.beginPath();
+                ctx.arc(baseX - foliageSize / 3, foliageY - foliageSize / 3, foliageSize / 2.5, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Right circle
+                ctx.beginPath();
+                ctx.arc(baseX + foliageSize / 3, foliageY - foliageSize / 3, foliageSize / 2.5, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Top circle
+                ctx.beginPath();
+                ctx.arc(baseX, foliageY - foliageSize * 0.7, foliageSize / 2.2, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Add leaf highlights
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.beginPath();
+                ctx.arc(baseX - 20, foliageY - foliageSize / 2 - 20, foliageSize / 5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function drawFruits() {
+            if (gameState !== 'playing') return;
+
+            const config = treeConfig[selectedTree];
+
+            fruits.forEach(fruit => {
+                if (fruit.collected) return;
+
+                // Wobble animation
+                fruit.wobble += 0.05;
+                const wobbleOffset = Math.sin(fruit.wobble) * 2;
+
+                // Draw fruit shadow
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+                ctx.beginPath();
+                ctx.ellipse(fruit.x, fruit.y + 3, fruit.radius * 0.8, fruit.radius * 0.4, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Draw fruit
+                ctx.fillStyle = config.fruitColor;
+                ctx.beginPath();
+                ctx.arc(fruit.x + wobbleOffset, fruit.y, fruit.radius, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Add fruit highlight
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+                ctx.beginPath();
+                ctx.arc(fruit.x + wobbleOffset - 4, fruit.y - 4, fruit.radius * 0.3, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        function drawOrb() {
+            if (gameState !== 'playing') return;
+
+            // Pulsing glow effect
+            const glowSize = 10 + Math.sin(orb.glow) * 5;
+
+            // Outer glow
+            const gradient = ctx.createRadialGradient(orb.x, orb.y, 0, orb.x, orb.y, orb.radius + glowSize);
+            gradient.addColorStop(0, 'rgba(255, 215, 0, 0.8)');
+            gradient.addColorStop(0.5, 'rgba(255, 215, 0, 0.4)');
+            gradient.addColorStop(1, 'rgba(255, 215, 0, 0)');
+
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(orb.x, orb.y, orb.radius + glowSize, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Inner orb
+            const orbGradient = ctx.createRadialGradient(
+                orb.x - 5, orb.y - 5, 0,
+                orb.x, orb.y, orb.radius
+            );
+            orbGradient.addColorStop(0, '#FFFFE0');
+            orbGradient.addColorStop(1, '#FFD700');
+
+            ctx.fillStyle = orbGradient;
+            ctx.beginPath();
+            ctx.arc(orb.x, orb.y, orb.radius, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Sparkle effect
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.arc(orb.x - 5, orb.y - 5, 3, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function drawSeedling() {
+            if (gameState !== 'growing' || treeHeight > 20) return;
+
+            const baseX = canvas.width / 2;
+            const baseY = canvas.height - 20;
+
+            // Draw tiny sprout
+            ctx.strokeStyle = '#4CAF50';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(baseX, baseY);
+            ctx.quadraticCurveTo(baseX - 5, baseY - 15, baseX, baseY - 20);
+            ctx.stroke();
+
+            // Draw leaves
+            ctx.fillStyle = '#81C784';
+            ctx.beginPath();
+            ctx.ellipse(baseX - 5, baseY - 15, 8, 4, -Math.PI / 4, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.ellipse(baseX + 5, baseY - 12, 8, 4, Math.PI / 4, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function render() {
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw game elements
+            drawSeedling();
+            drawTree();
+            drawFruits();
+            drawOrb();
+        }
+
+        // ==================== GAME LOOP ====================
+        function gameLoop() {
+            if (gameState === 'menu' || gameState === 'microphone_prompt') return;
+
+            updateTree();
+            updateOrb();
+            checkCollisions();
+            render();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // ==================== RESET GAME ====================
+        function resetGame() {
+            // Stop audio
+            if (microphone) {
+                microphone.disconnect();
+            }
+            if (audioContext) {
+                audioContext.close();
+            }
+
+            // Reset variables
+            gameState = 'menu';
+            selectedTree = null;
+            treeHeight = 0;
+            growthSpeed = 0;
+            fruits = [];
+            collectedFruits = 0;
+            orb.x = canvas.width / 2;
+            orb.y = canvas.height - 50;
+
+            audioContext = null;
+            analyser = null;
+            microphone = null;
+            dataArray = null;
+
+            // Reset UI
+            menuScreen.classList.remove('hidden');
+            gameScreen.style.display = 'none';
+            statusText.classList.add('hidden');
+            restartBtn.classList.add('hidden');
+
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+    </script>
+</body>
+</html>

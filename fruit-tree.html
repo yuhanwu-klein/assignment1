@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>果树着色器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(to bottom, #87CEEB 0%, #98D8E8 50%, #90EE90 100%);
+            overflow: hidden;
+        }
+
+        canvas {
+            border: 3px solid #8B4513;
+            border-radius: 10px;
+            box-shadow: 0 10px 50px rgba(0, 0, 0, 0.3);
+            background: linear-gradient(to bottom, #87CEEB 0%, #98D8E8 60%, #90EE90 100%);
+        }
+
+        .controls {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .controls h2 {
+            margin-bottom: 15px;
+            color: #2c5f2d;
+        }
+
+        .control-group {
+            margin-bottom: 10px;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .control-group input[type="range"] {
+            width: 200px;
+        }
+
+        .control-group button {
+            padding: 8px 15px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .control-group button:hover {
+            background: #45a049;
+        }
+
+        .info {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="controls">
+        <h2>🌳 果树控制器</h2>
+        <div class="control-group">
+            <label>果实数量: <span id="fruitCountValue">15</span></label>
+            <input type="range" id="fruitCount" min="5" max="30" value="15">
+        </div>
+        <div class="control-group">
+            <label>树的高度: <span id="treeHeightValue">400</span></label>
+            <input type="range" id="treeHeight" min="200" max="500" value="400">
+        </div>
+        <div class="control-group">
+            <label>果实位置（顶部偏移）: <span id="fruitPositionValue">0.3</span></label>
+            <input type="range" id="fruitPosition" min="0" max="0.5" step="0.05" value="0.3">
+        </div>
+        <div class="control-group">
+            <button onclick="regenerateTree()">重新生成树 🔄</button>
+        </div>
+    </div>
+
+    <div class="info">
+        <strong>🍎 果树着色器</strong><br>
+        果实在树的上面！
+    </div>
+
+    <canvas id="treeCanvas" width="800" height="600"></canvas>
+
+    <script>
+        const canvas = document.getElementById('treeCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Configuration
+        let config = {
+            fruitCount: 15,
+            treeHeight: 400,
+            fruitPosition: 0.3, // 0.0 = top, 1.0 = bottom
+            treeBaseX: canvas.width / 2,
+            treeBaseY: canvas.height - 50
+        };
+
+        // Update slider values display
+        document.getElementById('fruitCount').addEventListener('input', function(e) {
+            config.fruitCount = parseInt(e.target.value);
+            document.getElementById('fruitCountValue').textContent = config.fruitCount;
+            drawTree();
+        });
+
+        document.getElementById('treeHeight').addEventListener('input', function(e) {
+            config.treeHeight = parseInt(e.target.value);
+            document.getElementById('treeHeightValue').textContent = config.treeHeight;
+            drawTree();
+        });
+
+        document.getElementById('fruitPosition').addEventListener('input', function(e) {
+            config.fruitPosition = parseFloat(e.target.value);
+            document.getElementById('fruitPositionValue').textContent = config.fruitPosition.toFixed(2);
+            drawTree();
+        });
+
+        function regenerateTree() {
+            drawTree();
+        }
+
+        // Recursive function to draw tree branches
+        function drawBranch(x, y, length, angle, depth, branches) {
+            if (depth === 0) return branches;
+
+            const endX = x + length * Math.cos(angle);
+            const endY = y - length * Math.sin(angle);
+
+            // Draw branch
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(endX, endY);
+            ctx.strokeStyle = '#4a2511';
+            ctx.lineWidth = depth * 2;
+            ctx.lineCap = 'round';
+            ctx.stroke();
+
+            // Store branch information for fruit placement
+            branches.push({
+                x: endX,
+                y: endY,
+                depth: depth,
+                length: length
+            });
+
+            if (depth > 1) {
+                const newLength = length * 0.7;
+                const angleVariation = (Math.random() - 0.5) * 0.5;
+
+                // Left branch
+                drawBranch(endX, endY, newLength, angle + Math.PI/6 + angleVariation, depth - 1, branches);
+
+                // Right branch
+                drawBranch(endX, endY, newLength, angle - Math.PI/6 + angleVariation, depth - 1, branches);
+
+                // Sometimes add a middle branch
+                if (Math.random() > 0.6 && depth > 2) {
+                    drawBranch(endX, endY, newLength * 0.8, angle + angleVariation, depth - 1, branches);
+                }
+            }
+
+            return branches;
+        }
+
+        // Draw a fruit
+        function drawFruit(x, y, type = 'apple') {
+            const size = 8 + Math.random() * 4;
+
+            if (type === 'apple') {
+                // Red apple
+                const gradient = ctx.createRadialGradient(x - size/3, y - size/3, 0, x, y, size);
+                gradient.addColorStop(0, '#ff6b6b');
+                gradient.addColorStop(0.7, '#ee5a6f');
+                gradient.addColorStop(1, '#c92a2a');
+
+                ctx.beginPath();
+                ctx.arc(x, y, size, 0, Math.PI * 2);
+                ctx.fillStyle = gradient;
+                ctx.fill();
+
+                // Highlight
+                ctx.beginPath();
+                ctx.arc(x - size/3, y - size/3, size/3, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+                ctx.fill();
+
+                // Stem
+                ctx.beginPath();
+                ctx.moveTo(x, y - size);
+                ctx.lineTo(x - 2, y - size - 5);
+                ctx.strokeStyle = '#4a2511';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            } else {
+                // Orange
+                const gradient = ctx.createRadialGradient(x - size/3, y - size/3, 0, x, y, size);
+                gradient.addColorStop(0, '#ffd93d');
+                gradient.addColorStop(0.7, '#ffb03b');
+                gradient.addColorStop(1, '#ff8800');
+
+                ctx.beginPath();
+                ctx.arc(x, y, size, 0, Math.PI * 2);
+                ctx.fillStyle = gradient;
+                ctx.fill();
+
+                // Highlight
+                ctx.beginPath();
+                ctx.arc(x - size/3, y - size/3, size/3, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+                ctx.fill();
+            }
+        }
+
+        // Draw leaves
+        function drawLeaves(x, y) {
+            const leafCount = 3 + Math.floor(Math.random() * 4);
+            for (let i = 0; i < leafCount; i++) {
+                const leafX = x + (Math.random() - 0.5) * 30;
+                const leafY = y + (Math.random() - 0.5) * 30;
+                const leafSize = 15 + Math.random() * 10;
+
+                ctx.save();
+                ctx.translate(leafX, leafY);
+                ctx.rotate(Math.random() * Math.PI * 2);
+
+                ctx.beginPath();
+                ctx.ellipse(0, 0, leafSize, leafSize/2, 0, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(34, 139, 34, ${0.6 + Math.random() * 0.4})`;
+                ctx.fill();
+
+                ctx.restore();
+            }
+        }
+
+        // Main drawing function
+        function drawTree() {
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw ground
+            ctx.fillStyle = '#8B7355';
+            ctx.fillRect(0, canvas.height - 40, canvas.width, 40);
+
+            // Grass
+            ctx.fillStyle = '#7cb342';
+            for (let i = 0; i < canvas.width; i += 5) {
+                ctx.fillRect(i, canvas.height - 42, 3, -5 - Math.random() * 5);
+            }
+
+            // Draw tree trunk
+            const trunkWidth = 40;
+            const trunkHeight = config.treeHeight * 0.3;
+
+            const trunkGradient = ctx.createLinearGradient(
+                config.treeBaseX - trunkWidth/2, 0,
+                config.treeBaseX + trunkWidth/2, 0
+            );
+            trunkGradient.addColorStop(0, '#3e2723');
+            trunkGradient.addColorStop(0.5, '#5d4037');
+            trunkGradient.addColorStop(1, '#3e2723');
+
+            ctx.fillStyle = trunkGradient;
+            ctx.fillRect(
+                config.treeBaseX - trunkWidth/2,
+                config.treeBaseY - trunkHeight,
+                trunkWidth,
+                trunkHeight
+            );
+
+            // Draw branches and collect branch positions
+            const branches = [];
+            const branchStartY = config.treeBaseY - trunkHeight;
+            drawBranch(config.treeBaseX, branchStartY, config.treeHeight * 0.25, Math.PI/2, 6, branches);
+
+            // Filter branches - only keep branches in the upper portion of the tree
+            const treeTop = Math.min(...branches.map(b => b.y));
+            const treeBottom = Math.max(...branches.map(b => b.y));
+            const treeHeightRange = treeBottom - treeTop;
+
+            // Only place fruits in the top portion (controlled by fruitPosition)
+            const maxFruitY = treeTop + treeHeightRange * config.fruitPosition;
+            const upperBranches = branches.filter(b => b.y < maxFruitY && b.depth <= 3);
+
+            // Draw leaves on all branches
+            branches.forEach(branch => {
+                if (branch.depth <= 2) {
+                    drawLeaves(branch.x, branch.y);
+                }
+            });
+
+            // Place fruits on upper branches only
+            if (upperBranches.length > 0) {
+                // Sort branches by Y position to favor the topmost ones
+                upperBranches.sort((a, b) => a.y - b.y);
+
+                const fruitsToPlace = Math.min(config.fruitCount, upperBranches.length);
+                const selectedBranches = [];
+
+                // Select branches for fruit placement with preference for higher branches
+                for (let i = 0; i < fruitsToPlace; i++) {
+                    const index = Math.floor(Math.random() * Math.min(upperBranches.length, Math.max(5, upperBranches.length * 0.6)));
+                    selectedBranches.push(upperBranches[index]);
+                }
+
+                // Draw fruits
+                selectedBranches.forEach((branch, i) => {
+                    const fruitType = Math.random() > 0.5 ? 'apple' : 'orange';
+                    const offsetX = (Math.random() - 0.5) * 15;
+                    const offsetY = (Math.random() - 0.5) * 15;
+                    drawFruit(branch.x + offsetX, branch.y + offsetY, fruitType);
+                });
+            }
+
+            // Add sun
+            const sunGradient = ctx.createRadialGradient(700, 80, 10, 700, 80, 40);
+            sunGradient.addColorStop(0, '#FFE484');
+            sunGradient.addColorStop(0.5, '#FFD700');
+            sunGradient.addColorStop(1, 'rgba(255, 215, 0, 0)');
+
+            ctx.beginPath();
+            ctx.arc(700, 80, 40, 0, Math.PI * 2);
+            ctx.fillStyle = sunGradient;
+            ctx.fill();
+        }
+
+        // Initial draw
+        drawTree();
+
+        // Add animation for gentle swaying (optional)
+        let swayOffset = 0;
+        function animate() {
+            swayOffset += 0.02;
+            // Could add subtle animation here if desired
+            requestAnimationFrame(animate);
+        }
+        animate();
+    </script>
+</body>
+</html>
